@@ -8,7 +8,8 @@ import java.util.List;
  * Created by pchen on 2/7/2017.
  */
 public class Board {
-    private int[] zeroLocation = new int[2];
+    private int zeroLocationx;
+    private int zeroLocationy;
     private int dimension;
     private int[][] boardArray;
 
@@ -17,12 +18,12 @@ public class Board {
         boardArray[a][b]=boardArray[c][d];
         boardArray[c][d]=val;
         if (boardArray[a][b] == 0) {
-            zeroLocation[0] = a;
-            zeroLocation[1] = b;
+            zeroLocationx = a;
+            zeroLocationy = b;
         }
         if (boardArray[c][d] == 0) {
-            zeroLocation[0] = c;
-            zeroLocation[1] = d;
+            zeroLocationx = c;
+            zeroLocationy = d;
         }
     }
     public Board(int[][] blocks) {
@@ -32,8 +33,8 @@ public class Board {
             for (int j = 0; j < dimension; j++) {
                 boardArray[i][j] = blocks[i][j];
                 if (boardArray[i][j] == 0 ) {
-                    zeroLocation[0]=i;
-                    zeroLocation[1]=j;
+                    zeroLocationx=i;
+                    zeroLocationy=j;
                 }
            }
 
@@ -58,7 +59,7 @@ public class Board {
         for (int i = 0; i < dimension; i++ ) {
             for (int j = 0; j < dimension; j++) {
                 if (boardArray[i][j] != 0) {
-                    manhattanSum+= Math.abs((boardArray[i][j]-1)/dimension - j) + Math.abs(boardArray[i][j]%dimension -i-1);
+                    manhattanSum+= (Math.abs((boardArray[i][j]-1)/dimension - i) + Math.abs((boardArray[i][j]-1)%dimension -j));
                 }
             }
         }
@@ -68,38 +69,80 @@ public class Board {
         return hamming() == 0;
     }
     public Board twin() {
+        int first_i = 0;
+        int first_j = 0;
+        int second_i = 0;
+        int second_j = 0;
+        outerloop:
+        {
+            for (int i = 0; i < dimension; i++) {
+                for (int j = 0; j < dimension; j++) {
+                    if (boardArray[i][j] != 0) {
+                        first_i = i;
+                        first_j = j;
+                        if (i >= 0 && i < dimension -1 && boardArray[i+1][j] != 0) {
+                            second_i = i+1;
+                            second_j = j;
+                            break outerloop;
+                        }
+                        else if (i < dimension && i> 0 && boardArray[i-1][j] != 0) {
+                            second_i = i-1;
+                            second_j = j;
+                            break outerloop;
 
-        int val= boardArray[0][0];
-        boardArray[0][0] = boardArray[0][1];
-        boardArray[0][1] = val;
+                        }
+                        else if (j >= 0 && j < dimension -1 && boardArray[i][j+1] != 0) {
+                            second_i = i;
+                            second_j = j + 1;
+                            break outerloop;
+
+                        }
+                        else if (j < dimension && j > 0 && boardArray[i][j-1] != 0) {
+                            second_i = i;
+                            second_j = j - 1;
+                            break outerloop;
+                        }
+
+                    }
+                }
+            }
+        }
+        exchange(first_i, first_j, second_i, second_j);
         Board twinBoard = new Board(boardArray);
-        boardArray[0][1] = boardArray[0][0];
-        boardArray[0][0] = val;
+        exchange(first_i, first_j, second_i, second_j);
         return twinBoard;
     }
     public boolean equals (Object y) {
-        return Arrays.deepEquals(((Board) y).boardArray, boardArray);
+        if (y == null) {
+            return false;
+        }
+        else if (y instanceof Board) {
+            return Arrays.deepEquals(((Board) y).boardArray, boardArray);
+        }
+        else {
+            return false;
+        }
     }
     public Iterable<Board> neighbors() {
         ArrayList<Board> boardList = new ArrayList<>();
-        if (zeroLocation[0] >= 0 && zeroLocation[0] < dimension-1) {
+        if (zeroLocationx >= 0 && zeroLocationx < dimension-1) {
             Board newBoard = new Board(boardArray);
-            newBoard.exchange(zeroLocation[0], zeroLocation[1], zeroLocation[0]+1, zeroLocation[1]);
+            newBoard.exchange(zeroLocationx, zeroLocationy, zeroLocationx+1, zeroLocationy);
             boardList.add(newBoard);
         }
-        if (zeroLocation[0] < dimension && zeroLocation[0] > 0) {
+        if (zeroLocationx < dimension && zeroLocationx > 0) {
             Board newBoard = new Board(boardArray);
-            newBoard.exchange(zeroLocation[0], zeroLocation[1], zeroLocation[0]-1, zeroLocation[1]);
+            newBoard.exchange(zeroLocationx, zeroLocationy, zeroLocationx-1, zeroLocationy);
             boardList.add(newBoard);
         }
-        if (zeroLocation[1] >= 0 && zeroLocation[1] < dimension-1) {
+        if (zeroLocationy >= 0 && zeroLocationy < dimension-1) {
             Board newBoard = new Board(boardArray);
-            newBoard.exchange(zeroLocation[0], zeroLocation[1], zeroLocation[0], zeroLocation[1] + 1);
+            newBoard.exchange(zeroLocationx, zeroLocationy, zeroLocationx, zeroLocationy + 1);
             boardList.add(newBoard);
         }
-        if  (zeroLocation[1] < dimension && zeroLocation[1] > 0) {
+        if  (zeroLocationy < dimension && zeroLocationy > 0) {
             Board newBoard = new Board(boardArray);
-            newBoard.exchange(zeroLocation[0], zeroLocation[1], zeroLocation[0], zeroLocation[1] - 1);
+            newBoard.exchange(zeroLocationx, zeroLocationy, zeroLocationx, zeroLocationy - 1);
             boardList.add(newBoard);
         }
         return boardList;
@@ -121,10 +164,10 @@ public class Board {
         return stringStore;
     }
     public static void main (String[] args) {
-        int[][] minArray = new int[2][2];
-        for (int i = 0; i < 2; i++ ) {
-            for (int j = 0; j < 2; j++) {
-                minArray[i][j] = 2*i + j;
+        int[][] minArray = new int[3][3];
+        for (int i = 0; i < 3; i++ ) {
+            for (int j = 0; j < 3; j++) {
+                minArray[i][j] = 3*i + j;
             }
         }
         Board newBoard = new Board(minArray);
@@ -138,5 +181,6 @@ public class Board {
         for (Board board :newBoard.neighbors()) {
             System.out.println(board);
         }
+        System.out.println(newBoard.manhattan());
     }
 }

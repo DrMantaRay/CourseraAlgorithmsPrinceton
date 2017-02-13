@@ -12,7 +12,6 @@ import java.util.Comparator;
  */
 public class Solver {
     private Node final_node;
-    private int moves;
     private boolean solvable;
     private class Node implements Comparable<Node> {
         Board current_board;
@@ -29,21 +28,20 @@ public class Solver {
             previous_node = n;
         }
         public int compareTo(Node b) {
-            if (current_board.hamming() > b.current_board.hamming()) {
+            if ((current_board.manhattan() + num_moves) > (b.num_moves + b.current_board.manhattan())) {
                 return 1;
-            } else if (current_board.hamming() < b.current_board.hamming()) {
+            } else if ((current_board.manhattan() + num_moves) < (b.num_moves + b.current_board.manhattan())) {
                 return -1;
             } else return 0;
         }
     }
     public Solver(Board initial) {
-        moves = 0;
         Node start_node = new Node();
         Node twin_start_node = new Node();
         start_node.current_board = initial;
-        start_node.num_moves = moves;
+        start_node.num_moves = 0;
         twin_start_node.current_board = initial.twin();
-        twin_start_node.num_moves = moves;
+        twin_start_node.num_moves = 0;
         Node cur_node = start_node;
         Node twin_cur_node = twin_start_node;
 
@@ -56,10 +54,9 @@ public class Solver {
         twinboardPQ.insert(twin_cur_node);
         Node temp_node;
         while (true) {
-            moves++;
             cur_node = boardPQ.delMin();
-            System.out.println(cur_node.current_board);
-            System.out.println("--");
+           /* System.out.println(cur_node.current_board);
+            System.out.println("---"); */
             twin_cur_node = twinboardPQ.delMin();
             if (cur_node.current_board.isGoal()) {
                 solvable = true;
@@ -71,25 +68,17 @@ public class Solver {
                 break;
             }
             for (Board board: cur_node.current_board.neighbors()) {
-                if (moves > 1 && board == cur_node.previous_node.current_board) {
+                if (cur_node.num_moves >= 1 && board.equals(cur_node.previous_node.current_board)) {
                     continue;
                 }
-                temp_node = new Node();
-                temp_node.current_board = board;
-                temp_node.previous_node = cur_node;
-                temp_node.num_moves = moves;
-                boardPQ.insert(temp_node);
+                boardPQ.insert(new Node(board, cur_node.num_moves + 1, cur_node));
             }
 
             for (Board twin_board: twin_cur_node.current_board.neighbors()) {
-                if (moves > 1 && twin_board == twin_cur_node.previous_node.current_board) {
+                if (twin_cur_node.num_moves >= 1 && twin_board.equals(twin_cur_node.previous_node.current_board)) {
                     continue;
                 }
-                temp_node = new Node();
-                temp_node.current_board = twin_board;
-                temp_node.previous_node = twin_cur_node;
-                temp_node.num_moves = moves;
-                twinboardPQ.insert(temp_node);
+                twinboardPQ.insert(new Node(twin_board, twin_cur_node.num_moves + 1, twin_cur_node));
             }
         }
     }
@@ -97,16 +86,22 @@ public class Solver {
         return solvable;
     }
     public int moves() {
-        return moves;
+        if (solvable == false) {
+            return -1;
+        }
+        else {
+            return final_node.num_moves;
+        }
     }
     public Iterable<Board> solution() {
         if (solvable) {
             ArrayList<Board> solutionList = new ArrayList<>();
             Node cur_node = final_node;
             while (cur_node.previous_node != null) {
-                solutionList.add(final_node.current_board);
+                solutionList.add(cur_node.current_board);
                 cur_node = cur_node.previous_node;
             }
+            solutionList.add(cur_node.current_board);
             Collections.reverse(solutionList);
             return solutionList;
         }
